@@ -29,8 +29,7 @@ class _LocationReceiverState extends State<LocationReceiver> {
   String connectionStatus = 'Disconnected';
   List<String> logs = [];
   Map<String, Map<String, dynamic>> ambulanceLocations = {};
-  String hospitalId =
-      'hos_1A3D31'; // You should set this based on the hospital's ID
+  String hospitalId = 'hos_1A3D31'; // Set this based on the hospital's ID
 
   @override
   void initState() {
@@ -55,10 +54,12 @@ class _LocationReceiverState extends State<LocationReceiver> {
       joinHospitalRoom();
     });
 
+    // Listening for location updates from ambulances
     socket.on('locationUpdate', (data) {
       addLog('Received location update: $data');
       setState(() {
-        ambulanceLocations[data['ambulanceId']] = {
+        ambulanceLocations[data['name']] = {
+          'ambulanceId': data['ambulanceId'], // Storing the ambulance ID
           'latitude': data['latitude'],
           'longitude': data['longitude'],
           'timestamp': data['timestamp'],
@@ -110,10 +111,12 @@ class _LocationReceiverState extends State<LocationReceiver> {
               child: ListView.builder(
                 itemCount: ambulanceLocations.length,
                 itemBuilder: (context, index) {
-                  String ambulanceId = ambulanceLocations.keys.elementAt(index);
-                  var location = ambulanceLocations[ambulanceId]!;
+                  String ambulanceName =
+                      ambulanceLocations.keys.elementAt(index);
+                  var location = ambulanceLocations[ambulanceName]!;
                   return ListTile(
-                    title: Text('Ambulance ID: $ambulanceId'),
+                    title: Text(
+                        'Ambulance Name: $ambulanceName (ID: ${location['ambulanceId']})'),
                     subtitle: Text(
                       'Lat: ${location['latitude']}, Lon: ${location['longitude']}\n'
                       'Last Update: ${location['timestamp']}',

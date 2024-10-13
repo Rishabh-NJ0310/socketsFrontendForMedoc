@@ -32,8 +32,10 @@ class LocationSender extends StatefulWidget {
 class _LocationSenderState extends State<LocationSender> {
   late IO.Socket socket;
   String status = 'Initializing...';
-  String hospitalId =
-      'hos_1A3D31'; // You should set this based on the user's hospital
+  TextEditingController hospitalIdController = TextEditingController();
+  TextEditingController nameController = TextEditingController();
+  String hospitalId = '';
+  String name = '';
 
   @override
   void initState() {
@@ -53,15 +55,20 @@ class _LocationSenderState extends State<LocationSender> {
         status = 'Connected to server';
       });
       print('Connected to socket server');
-      joinHospitalRoom();
     });
   }
 
   void joinHospitalRoom() {
-    socket.emit('join', {'hospitalId': hospitalId, 'clientType': 'ambulance'});
-    setState(() {
-      status = 'Joined hospital room: $hospitalId';
-    });
+    if (hospitalId.isNotEmpty && name.isNotEmpty) {
+      socket.emit('join', {'hospitalId': hospitalId, 'clientType': 'ambulance', 'name': name});
+      setState(() {
+        status = 'Joined hospital room: $hospitalId as $name';
+      });
+    } else {
+      setState(() {
+        status = 'Please enter both hospital ID and name';
+      });
+    }
   }
 
   void startLocationUpdates() async {
@@ -100,11 +107,19 @@ class _LocationSenderState extends State<LocationSender> {
   }
 
   void sendLocation(double latitude, double longitude) {
-    socket.emit('location', {
-      'latitude': latitude,
-      'longitude': longitude,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
+    if (hospitalId.isNotEmpty && name.isNotEmpty) {
+      socket.emit('location', {
+        'latitude': latitude,
+        'longitude': longitude,
+        'timestamp': DateTime.now().toIso8601String(),
+        'hospitalId': hospitalId,
+        'name': name,
+      });
+    } else {
+      setState(() {
+        status = 'Please enter both hospital ID and name';
+      });
+    }
   }
 
   @override
@@ -114,13 +129,39 @@ class _LocationSenderState extends State<LocationSender> {
         title: Text('Ambulance Location Sender'),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Hospital ID: $hospitalId'),
-            SizedBox(height: 20),
-            Text(status),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextFormField(
+                controller: hospitalIdController,
+                decoration: InputDecoration(
+                  labelText: 'Enter Hospital ID',
+                ),
+              ),
+              SizedBox(height: 20),
+              TextFormField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Enter Your Name',
+                ),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    hospitalId = hospitalIdController.text;
+                    name = nameController.text;
+                  });
+                  joinHospitalRoom();
+                },
+                child: Text('Submit'),
+              ),
+              SizedBox(height: 20),
+              Text(status),
+            ],
+          ),
         ),
       ),
     );
